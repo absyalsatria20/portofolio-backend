@@ -16,3 +16,6 @@ Route::get('/projects', [ProjectController::class, 'index']);
 
 // RUTE BARU: Rute untuk mengirim data baru (POST)
 Route::post('/projects', [ProjectController::class, 'store']);
+
+// RUTE BARU: Rute untuk menghapus data (DELETE) berdasarkan ID
+Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);

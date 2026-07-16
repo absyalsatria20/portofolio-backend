@@ -18,7 +18,6 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         // 1. CEK KEAMANAN (Gembok PIN)
-        // Ubah 'admin123' dengan PIN rahasiamu sendiri nanti
         if ($request->secret_pin !== 'absyal20') {
             return response()->json([
                 'success' => false,
@@ -43,5 +42,37 @@ class ProjectController extends Controller
             'message' => 'Project baru berhasil disimpan!',
             'data' => $project
         ], 201);
+    }
+
+    // Fungsi untuk menghapus data (DELETE) dengan PIN Keamanan
+    public function destroy(Request $request, $id)
+    {
+        // 1. Cek Keamanan PIN (Gembok PIN)
+        if ($request->secret_pin !== 'absyal20') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses Ditolak! PIN rahasia salah.'
+            ], 403);
+        }
+
+        // 2. Cari project berdasarkan ID
+        $project = Project::find($id);
+
+        // Jika datanya tidak ada
+        if (!$project) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Project tidak ditemukan.'
+            ], 404);
+        }
+
+        // 3. Eksekusi penghapusan dari database Aiven
+        $project->delete();
+
+        // 4. Kirim pesan sukses
+        return response()->json([
+            'success' => true,
+            'message' => 'Project berhasil dihapus!'
+        ]);
     }
 }
