@@ -19,3 +19,6 @@ Route::post('/projects', [ProjectController::class, 'store']);
 
 // RUTE BARU: Rute untuk menghapus data (DELETE) berdasarkan ID
 Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);
+
+// Rute untuk mengubah urutan layout
+Route::post('/projects/reorder', [ProjectController::class, 'reorder']);

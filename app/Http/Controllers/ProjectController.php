@@ -3,29 +3,24 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Project; // Memanggil model Project
+use App\Models\Project;
 
 class ProjectController extends Controller
 {
-    // Fungsi untuk mengambil semua data (GET)
+    // 1. Ambil data berdasarkan urutan (sort_order)
     public function index()
     {
-        $projects = Project::all();
+        $projects = Project::orderBy('sort_order', 'asc')->get();
         return response()->json($projects);
     }
 
-    // Fungsi untuk menyimpan data baru (POST) dengan PIN Keamanan
+    // 2. Simpan data baru (otomatis ditaruh di urutan paling akhir)
     public function store(Request $request)
     {
-        // 1. CEK KEAMANAN (Gembok PIN)
         if ($request->secret_pin !== 'absyal20') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Akses Ditolak! PIN rahasia salah.'
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'Akses Ditolak! PIN rahasia salah.'], 403);
         }
 
-        // 2. Jika PIN benar, lanjut validasi data
         $validated = $request->validate([
             'type' => 'required|string',
             'category' => 'required|string',
@@ -33,46 +28,41 @@ class ProjectController extends Controller
             'thumbTime' => 'nullable|string',
         ]);
 
-        // 3. Simpan ke database MySQL
+        $lastOrder = Project::max('sort_order');
+        $validated['sort_order'] = $lastOrder ? $lastOrder + 1 : 1;
+
         $project = Project::create($validated);
 
-        // 4. Kirim respon balik ke React kalau sukses
-        return response()->json([
-            'success' => true,
-            'message' => 'Project baru berhasil disimpan!',
-            'data' => $project
-        ], 201);
+        return response()->json(['success' => true, 'message' => 'Project baru berhasil disimpan!', 'data' => $project], 201);
     }
 
-    // Fungsi untuk menghapus data (DELETE) dengan PIN Keamanan
+    // 3. Hapus data
     public function destroy(Request $request, $id)
     {
-        // 1. Cek Keamanan PIN (Gembok PIN)
         if ($request->secret_pin !== 'absyal20') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Akses Ditolak! PIN rahasia salah.'
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'Akses Ditolak! PIN rahasia salah.'], 403);
         }
 
-        // 2. Cari project berdasarkan ID
         $project = Project::find($id);
-
-        // Jika datanya tidak ada
         if (!$project) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Project tidak ditemukan.'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Project tidak ditemukan.'], 404);
         }
 
-        // 3. Eksekusi penghapusan dari database Aiven
         $project->delete();
+        return response()->json(['success' => true, 'message' => 'Project berhasil dihapus!']);
+    }
 
-        // 4. Kirim pesan sukses
-        return response()->json([
-            'success' => true,
-            'message' => 'Project berhasil dihapus!'
-        ]);
+    // 4. FUNGSI BARU: Menyimpan susunan layout baru
+    public function reorder(Request $request)
+    {
+        if ($request->secret_pin !== 'absyal20') {
+            return response()->json(['success' => false, 'message' => 'Akses Ditolak! PIN rahasia salah.'], 403);
+        }
+
+        foreach ($request->items as $item) {
+            Project::where('id', $item['id'])->update(['sort_order' => $item['sort_order']]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Susunan layout berhasil disimpan!']);
     }
 }
